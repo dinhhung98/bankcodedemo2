@@ -5,8 +5,8 @@ import com.google.common.hash.Hashing;
 import com.vnpay.config.ConfigBankYaml;
 import com.vnpay.constance.ResponseCode;
 import com.vnpay.constance.ResponseMessage;
-import com.vnpay.dto.BankRequest;
-import com.vnpay.dto.BankResponse;
+import com.vnpay.dto.PaymentRequest;
+import com.vnpay.dto.PaymentResponse;
 import com.vnpay.model.Bank;
 import com.vnpay.service.PaymentService;
 import com.vnpay.util.JedisUtil;
@@ -48,31 +48,31 @@ public class ServiceImp implements PaymentService {
     private static Logger log = LogManager.getLogger(ServiceImp.class);
 
     @Override
-    public ResponseEntity<BankResponse> save(BankRequest bankRequest, String responseId) throws ParseException, JsonProcessingException {
+    public ResponseEntity<PaymentResponse> save(PaymentRequest bankRequest, String responseId) throws ParseException, JsonProcessingException {
         String privateKey = findBankByBankCode(bankRequest.getBankCode());
         if (Strings.isEmpty(privateKey)){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.BANK_CODE_ERROR, ResponseMessage.MSG_BANK_CODE_ERROR,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.BANK_CODE_ERROR, ResponseMessage.MSG_BANK_CODE_ERROR,responseId));
         }
         if (!isCheckSum(bankRequest,privateKey)){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.CHECK_SUM_ERROR, ResponseMessage.MSG_CHECK_SUM_ERROR,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.CHECK_SUM_ERROR, ResponseMessage.MSG_CHECK_SUM_ERROR,responseId));
         }
         if (!isPayDate(bankRequest.getPayDate())){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.DATA_REQUEST_ERROR, ResponseMessage.MSG_PAY_DATE_ERROR,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.DATA_REQUEST_ERROR, ResponseMessage.MSG_PAY_DATE_ERROR,responseId));
         }
         if (findTokenKey(bankRequest.getTokenKey())){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.TOKEN_EXITS, ResponseMessage.MSG_TOKEN_EXITS,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.TOKEN_EXITS, ResponseMessage.MSG_TOKEN_EXITS,responseId));
         }
         if (!checkAmount(bankRequest)){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.AMOUNT_ERROR, ResponseMessage.MSG_AMOUNT_ERROR,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.AMOUNT_ERROR, ResponseMessage.MSG_AMOUNT_ERROR,responseId));
         }
         if (!saveDataToRedis(bankRequest)){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.SAVE_ERROR, ResponseMessage.MSG_SAVE_ERROR,responseId));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.SAVE_ERROR, ResponseMessage.MSG_SAVE_ERROR,responseId));
         }
         String message =sendQueue(bankRequest);
         if ("200".equals(message)){
-            return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.CODE_SUCCESS, ResponseMessage.MSG_SUCCESS,responseId,bankRequest.getCheckSum(),bankRequest.getAddValue()));
+            return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.CODE_SUCCESS, ResponseMessage.MSG_SUCCESS,responseId,bankRequest.getCheckSum(),bankRequest.getAddValue()));
         }
-        return ResponseEntity.badRequest().body(new BankResponse(ResponseCode.SEND_TO_RABBIT_ERROR, ResponseMessage.MSG_RABBIT_ERROR,responseId));
+        return ResponseEntity.badRequest().body(new PaymentResponse(ResponseCode.SEND_TO_RABBIT_ERROR, ResponseMessage.MSG_RABBIT_ERROR,responseId));
     }
 
     private String findBankByBankCode(String bankCode) {
@@ -84,7 +84,7 @@ public class ServiceImp implements PaymentService {
         return "";
     }
 
-    private boolean isCheckSum(BankRequest bankRequest, String privateKey) {
+    private boolean isCheckSum(PaymentRequest bankRequest, String privateKey) {
         String tempCheck = bankRequest.getMobile() + bankRequest.getBankCode() + bankRequest.getAccountNo()
                 + bankRequest.getPayDate() + bankRequest.getDebitAmount() + bankRequest.getRespCode()
                 + bankRequest.getTraceTransfer() + bankRequest.getMessageType() + privateKey;
@@ -98,19 +98,19 @@ public class ServiceImp implements PaymentService {
         return false;
     }
 
-    private boolean isPayDate(String payDate) throws ParseException {
+    private boolean isPayDate(String payDate) {
         DateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         sdf.setLenient(false);
         try {
-            sdf.parse(payDate);
+            Date payDateInput = sdf.parse(payDate);
+            log.info("Pay Date: {}",payDateInput.toString());
         } catch (ParseException e) {
             return false;
         }
-        log.info("Pay Date: {}",new SimpleDateFormat("yyyyMMddhhmmss").parse(payDate).toString());
         return true;
     }
 
-    private boolean saveDataToRedis(BankRequest paymentRequestApi) {
+    private boolean saveDataToRedis(PaymentRequest paymentRequestApi) {
         try {
             jedisUtil.save(paymentRequestApi.getTokenKey(), paymentRequestApi.toString());
             Long timeExpire = Date.from(LocalDateTime.now().with(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant()).getTime();
@@ -122,8 +122,8 @@ public class ServiceImp implements PaymentService {
         }
     }
 
-    public String sendQueue(BankRequest paymentRequestApi) throws JsonProcessingException, AmqpException {
-        log.info("Begin data to rabbit: {}", paymentRequestApi);
+    public String sendQueue(PaymentRequest paymentRequestApi) throws JsonProcessingException, AmqpException {
+        log.info("Begin send data to rabbit: {}", paymentRequestApi);
         String messsage = (String) rabbit.convertSendAndReceive(exchange, routingkey, MapperObject.getMapperObject().objectToJson(paymentRequestApi));
         log.info("Response from rabbit: {}", messsage);
         return messsage;
@@ -133,7 +133,7 @@ public class ServiceImp implements PaymentService {
         return jedisUtil.exits(tokenKey);
     }
 
-    private boolean checkAmount(BankRequest bankRequest){
+    private boolean checkAmount(PaymentRequest bankRequest){
         log.info("Real amount: {} and debit amount: {}",bankRequest.getRealAmount(),bankRequest.getDebitAmount());
         if (Strings.isEmpty(bankRequest.getRealAmount().toString())) return false;
         int compareAmount = bankRequest.getRealAmount().compareTo(bankRequest.getDebitAmount());

@@ -1,13 +1,13 @@
 package com.vnpay.dto;
 
-public class BankResponse {
+public class PaymentResponse {
     private String code;
     private String message;
     private String responseId;
     private String checkSum;
     private String addValue;
 
-    public BankResponse(String code, String message, String responseId, String checkSum, String addValue) {
+    public PaymentResponse(String code, String message, String responseId, String checkSum, String addValue) {
         this.code = code;
         this.message = message;
         this.responseId = responseId;
@@ -15,7 +15,7 @@ public class BankResponse {
         this.addValue = addValue;
     }
 
-    public BankResponse(String code, String message,String responseId) {
+    public PaymentResponse(String code, String message, String responseId) {
         this.code = code;
         this.message = message;
         this.responseId = responseId;

@@ -1,7 +1,7 @@
 package com.vnpay.controller;
 
-import com.vnpay.dto.BankRequest;
-import com.vnpay.dto.BankResponse;
+import com.vnpay.dto.PaymentRequest;
+import com.vnpay.dto.PaymentResponse;
 import com.vnpay.service.imp.ServiceImp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,10 +21,11 @@ public class PaymentController {
     ServiceImp bankService;
     private static Logger log = LogManager.getLogger(PaymentController.class);
     @PostMapping
-    public ResponseEntity<BankResponse>getResponse(@Valid @RequestBody BankRequest bankRequest) throws Exception{
-        log.info("Bank request {}",bankRequest.toString());
+    public ResponseEntity<PaymentResponse>getPaymentRequest(@Valid @RequestBody PaymentRequest bankRequest) throws Exception{
         String tokenRequest = UUID.randomUUID().toString();
         ThreadContext.put("token", tokenRequest);
+        log.info("Token request {}",tokenRequest);
+        log.info("Payment request {}",bankRequest.toString());
         try {
             return bankService.save(bankRequest,tokenRequest);
         }finally {

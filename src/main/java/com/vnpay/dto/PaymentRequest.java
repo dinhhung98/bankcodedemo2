@@ -8,7 +8,7 @@ import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 
 @Data
-public class BankRequest {
+public class PaymentRequest {
     @NotBlank
     private String tokenKey;
     @NotBlank
