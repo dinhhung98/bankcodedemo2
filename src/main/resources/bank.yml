@@ -1,0 +1,16 @@
+banks:
+  listbank:
+    - bankcode: 970445
+      privateKey: ghffffffffff
+      ips:
+
+    - bankcode: 1234
+      privateKey: jjjjjjjj
+      ips:
+
+    - bankcode: 5678
+      privateKey: hhhhhhhhh
+      ips:
+
+    - bankcode: 2345
+      privateKey: kkkkkkkk
