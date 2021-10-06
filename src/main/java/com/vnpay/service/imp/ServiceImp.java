@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -98,11 +99,15 @@ public class ServiceImp implements PaymentService {
     }
 
     private boolean isPayDate(String payDate) throws ParseException {
-        log.info("Pay Date: {}",new SimpleDateFormat("yyyyMMddhhmmss").parse(payDate).toString());
-        if (payDate.matches("^[0-9]{14}$")){
-            return true;
+        DateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        sdf.setLenient(false);
+        try {
+            sdf.parse(payDate);
+        } catch (ParseException e) {
+            return false;
         }
-        return false;
+        log.info("Pay Date: {}",new SimpleDateFormat("yyyyMMddhhmmss").parse(payDate).toString());
+        return true;
     }
 
     private boolean saveDataToRedis(BankRequest paymentRequestApi) {
