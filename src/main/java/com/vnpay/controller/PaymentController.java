@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,18 +21,19 @@ public class PaymentController {
     @Autowired
     ServiceImp bankService;
     private static Logger log = LogManager.getLogger(PaymentController.class);
+
     @PostMapping
-    public ResponseEntity<PaymentResponse>getPaymentRequest(@Valid @RequestBody PaymentRequest bankRequest) throws Exception{
+    public ResponseEntity<PaymentResponse> getPaymentRequest(@Valid @RequestBody PaymentRequest bankRequest) {
         String tokenRequest = UUID.randomUUID().toString();
         ThreadContext.put("token", tokenRequest);
-        log.info("Token request {}",tokenRequest);
-        log.info("Payment request {}",bankRequest.toString());
+        log.info("Token request {}", tokenRequest);
+        log.info("Payment request {}", bankRequest.toString());
         try {
-            return bankService.save(bankRequest,tokenRequest);
-        }catch (Exception e){
-            e.printStackTrace();
-            return null;
-        }finally {
+            return bankService.save(bankRequest, tokenRequest);
+        } catch (Exception e) {
+            log.error("Internal server error: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } finally {
             ThreadContext.pop();
             ThreadContext.clearMap();
         }

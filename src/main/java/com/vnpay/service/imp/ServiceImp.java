@@ -122,7 +122,7 @@ public class ServiceImp implements PaymentService {
         }
     }
 
-    public String sendQueue(PaymentRequest paymentRequestApi) throws JsonProcessingException, AmqpException {
+    public String sendQueue(PaymentRequest paymentRequestApi) {
         log.info("Begin send data to rabbit: {}", paymentRequestApi);
         try {
             String messsage = (String) rabbit.convertSendAndReceive(exchange, routingkey, MapperObject.getMapperObject().objectToJson(paymentRequestApi));
