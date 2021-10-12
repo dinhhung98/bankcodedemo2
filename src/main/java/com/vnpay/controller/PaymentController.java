@@ -28,6 +28,9 @@ public class PaymentController {
         log.info("Payment request {}",bankRequest.toString());
         try {
             return bankService.save(bankRequest,tokenRequest);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
         }finally {
             ThreadContext.pop();
             ThreadContext.clearMap();
